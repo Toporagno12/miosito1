@@ -1,59 +1,214 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pagina Modificabile</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>tRadio Web Editor</title>
+
 <style>
-body{font-family:Arial,sans-serif;margin:0;background:#f5f5f5}
-.toolbar{position:sticky;top:0;background:white;padding:10px;border-bottom:1px solid #ccc;display:flex;gap:8px;flex-wrap:wrap}
-.editor{min-height:80vh;padding:20px;background:white;margin:20px;outline:none}
-button{padding:8px 12px;cursor:pointer}
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #0b0b0b;
+    color: #fff;
+    display: flex;
+}
+
+/* SIDEBAR */
+.sidebar {
+    width: 280px;
+    background: #141414;
+    height: 100vh;
+    padding: 15px;
+    box-sizing: border-box;
+    border-right: 1px solid #2a2a2a;
+}
+
+.sidebar h2 {
+    font-size: 16px;
+    margin-bottom: 10px;
+    color: #4da6ff;
+}
+
+.section {
+    margin-bottom: 20px;
+    padding: 10px;
+    background: #1c1c1c;
+    border-radius: 8px;
+}
+
+button {
+    width: 100%;
+    padding: 10px;
+    margin-top: 6px;
+    background: #262626;
+    border: 1px solid #333;
+    color: white;
+    cursor: pointer;
+    border-radius: 6px;
+}
+
+button:hover {
+    background: #333;
+}
+
+/* MAIN */
+.main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.toolbar {
+    background: #141414;
+    padding: 10px;
+    display: flex;
+    gap: 8px;
+    border-bottom: 1px solid #2a2a2a;
+}
+
+.toolbar button {
+    width: auto;
+    padding: 8px 12px;
+}
+
+.editor {
+    flex: 1;
+    padding: 20px;
+    outline: none;
+    background: #0f0f0f;
+}
 </style>
 </head>
+
 <body>
-<div class="toolbar">
-  <button onclick="document.execCommand('bold')"><b>Grassetto</b></button>
-  <button onclick="document.execCommand('italic')"><i>Corsivo</i></button>
-  <button onclick="addImage()">Immagine</button>
-  <button onclick="savePage()">Salva nel browser</button>
+
+<!-- SIDEBAR (stile tRadio admin panel) -->
+<div class="sidebar">
+    <h2>tRadio Editor</h2>
+
+    <div class="section">
+        <b>Zone</b>
+        <button onclick="addZone()">+ Add Zone</button>
+        <div id="zones"></div>
+    </div>
+
+    <div class="section">
+        <b>Channels</b>
+        <button onclick="addChannel()">+ Add Channel</button>
+        <div id="channels"></div>
+    </div>
+
+    <div class="section">
+        <b>Actions</b>
+        <button onclick="save()">Save (Local)</button>
+        <button onclick="exportData()">Export JSON</button>
+    </div>
 </div>
 
-<div id="editor" class="editor" contenteditable="true">
-  <h1>Pagina modificabile</h1>
-  <p>Scrivi qui il tuo testo...</p>
+<!-- MAIN -->
+<div class="main">
+
+    <div class="toolbar">
+        <button onclick="document.execCommand('bold')"><b>B</b></button>
+        <button onclick="document.execCommand('italic')"><i>I</i></button>
+        <button onclick="addImage()">Image</button>
+    </div>
+
+    <div id="editor" class="editor" contenteditable="true">
+        <h1>tRadio Web Editor</h1>
+        <p>Scrivi contenuti collegabili al sistema radio...</p>
+    </div>
+
 </div>
 
 <script>
-const editor = document.getElementById('editor');
 
-if(localStorage.getItem('editable_page_content')){
-  editor.innerHTML = localStorage.getItem('editable_page_content');
+const editor = document.getElementById("editor");
+
+let zones = JSON.parse(localStorage.getItem("zones") || "[]");
+let channels = JSON.parse(localStorage.getItem("channels") || "[]");
+
+/* LOAD CONTENT */
+if(localStorage.getItem("editor_content")){
+    editor.innerHTML = localStorage.getItem("editor_content");
 }
 
-function savePage(){
-  localStorage.setItem('editable_page_content', editor.innerHTML);
-  alert('Contenuto salvato nel browser.');
+/* RENDER */
+function render(){
+    document.getElementById("zones").innerHTML =
+        zones.map(z => `<div>📡 ${z}</div>`).join("");
+
+    document.getElementById("channels").innerHTML =
+        channels.map(c => `<div>🔊 ${c}</div>`).join("");
+}
+render();
+
+/* ZONES */
+function addZone(){
+    let name = prompt("Zone name:");
+    if(!name) return;
+    zones.push(name);
+    render();
 }
 
-function addImage(){
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = 'image/*';
-  input.onchange = e => {
-    const file = e.target.files[0];
-    if(!file) return;
-    const reader = new FileReader();
-    reader.onload = function(ev){
-      const img = document.createElement('img');
-      img.src = ev.target.result;
-      img.style.maxWidth = '100%';
-      editor.appendChild(img);
+/* CHANNELS */
+function addChannel(){
+    let name = prompt("Channel name:");
+    if(!name) return;
+    channels.push(name);
+    render();
+}
+
+/* SAVE */
+function save(){
+    localStorage.setItem("editor_content", editor.innerHTML);
+    localStorage.setItem("zones", JSON.stringify(zones));
+    localStorage.setItem("channels", JSON.stringify(channels));
+    alert("Saved locally (tRadio-style data)");
+}
+
+/* EXPORT */
+function exportData(){
+    const data = {
+        zones,
+        channels,
+        content: editor.innerHTML
     };
-    reader.readAsDataURL(file);
-  };
-  input.click();
+
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "tradio-data.json";
+    a.click();
 }
+
+/* IMAGE */
+function addImage(){
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+
+    input.onchange = e => {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+
+        reader.onload = ev => {
+            const img = document.createElement("img");
+            img.src = ev.target.result;
+            img.style.maxWidth = "100%";
+            editor.appendChild(img);
+        };
+
+        reader.readAsDataURL(file);
+    };
+
+    input.click();
+}
+
 </script>
+
 </body>
 </html>
