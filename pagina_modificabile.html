@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pagina Modificabile</title>
+<style>
+body{font-family:Arial,sans-serif;margin:0;background:#f5f5f5}
+.toolbar{position:sticky;top:0;background:white;padding:10px;border-bottom:1px solid #ccc;display:flex;gap:8px;flex-wrap:wrap}
+.editor{min-height:80vh;padding:20px;background:white;margin:20px;outline:none}
+button{padding:8px 12px;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <button onclick="document.execCommand('bold')"><b>Grassetto</b></button>
+  <button onclick="document.execCommand('italic')"><i>Corsivo</i></button>
+  <button onclick="addImage()">Immagine</button>
+  <button onclick="savePage()">Salva nel browser</button>
+</div>
+
+<div id="editor" class="editor" contenteditable="true">
+  <h1>Pagina modificabile</h1>
+  <p>Scrivi qui il tuo testo...</p>
+</div>
+
+<script>
+const editor = document.getElementById('editor');
+
+if(localStorage.getItem('editable_page_content')){
+  editor.innerHTML = localStorage.getItem('editable_page_content');
+}
+
+function savePage(){
+  localStorage.setItem('editable_page_content', editor.innerHTML);
+  alert('Contenuto salvato nel browser.');
+}
+
+function addImage(){
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.onchange = e => {
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = function(ev){
+      const img = document.createElement('img');
+      img.src = ev.target.result;
+      img.style.maxWidth = '100%';
+      editor.appendChild(img);
+    };
+    reader.readAsDataURL(file);
+  };
+  input.click();
+}
+</script>
+</body>
+</html>
